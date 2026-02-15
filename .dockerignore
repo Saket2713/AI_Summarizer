@@ -1,0 +1,9 @@
+node_modules
+node_modules.zip
+dist
+.git
+.env
+.gitignore
+README.md
+LICENSE
+*.md
