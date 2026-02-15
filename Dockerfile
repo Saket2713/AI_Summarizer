@@ -1,35 +1,41 @@
-# Stage 1: Build the React app
-FROM node:20-alpine AS build
+# ============================================
+# Stage 1: Build the React frontend
+# ============================================
+FROM node:20-alpine AS frontend-build
 
-WORKDIR /app
+WORKDIR /app/frontend
 
-# Copy package files and install dependencies
+# Copy frontend package files
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy source code
+# Copy frontend source and build
 COPY . .
-
-# Accept the API key as a build argument
-ARG VITE_RAPID_API_ARTICLE_KEY
-ENV VITE_RAPID_API_ARTICLE_KEY=$VITE_RAPID_API_ARTICLE_KEY
-
-# Build the app
 RUN npm run build
 
-# Stage 2: Serve with nginx
-FROM nginx:alpine
+# ============================================
+# Stage 2: Build the backend + serve everything
+# ============================================
+FROM node:20-alpine AS production
 
-# Remove default nginx config
-RUN rm /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy backend package files and install
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --omit=dev
 
-# Copy built files from Stage 1
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy backend source
+COPY server/src ./src
+COPY server/prisma ./prisma
 
-# Expose port 80
-EXPOSE 80
+# Generate Prisma client
+RUN npx prisma generate
 
-CMD ["nginx", "-g", "daemon off;"]
+# Copy frontend build output from Stage 1
+COPY --from=frontend-build /app/frontend/dist ./client-dist
+
+# Expose backend port
+EXPOSE 3000
+
+# Run Prisma migrations and start the server
+CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]

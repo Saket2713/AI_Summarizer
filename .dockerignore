@@ -3,7 +3,10 @@ node_modules.zip
 dist
 .git
 .env
+server/.env
+server/node_modules
 .gitignore
 README.md
 LICENSE
 *.md
+docker-compose.yml

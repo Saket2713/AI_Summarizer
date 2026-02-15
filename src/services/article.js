@@ -1,23 +1,46 @@
-import {createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-const rapidApiKey = import.meta.env.VITE_RAPID_API_ARTICLE_KEY;
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 export const articleApi = createApi({
-    reducerPath:'articleApi',
+    reducerPath: 'articleApi',
     baseQuery: fetchBaseQuery({
-        baseUrl:'https://article-extractor-and-summarizer.p.rapidapi.com/'
-        ,prepareHeaders:(headers)=>{
-            headers.set('X-RapidAPI-Key', rapidApiKey);
-            headers.set('X-RapidAPI-Host', 'article-extractor-and-summarizer.p.rapidapi.com');
-
+        baseUrl: `${API_URL}/api`,
+        prepareHeaders: (headers) => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                headers.set('Authorization', `Bearer ${token}`);
+            }
+            headers.set('Content-Type', 'application/json');
             return headers;
-        }
+        },
     }),
-    endpoints:(builder)=>({
-        getSummary:builder.query({
-            query: (params) => `/summarize?url=${encodeURIComponent(params.articleUrl)}&length=3`
-        })
-    })
- 
+    tagTypes: ['Summaries'],
+    endpoints: (builder) => ({
+        getSummary: builder.mutation({
+            query: (params) => ({
+                url: '/summaries',
+                method: 'POST',
+                body: { url: params.articleUrl },
+            }),
+            invalidatesTags: ['Summaries'],
+        }),
+        getHistory: builder.query({
+            query: () => '/summaries',
+            providesTags: ['Summaries'],
+        }),
+        deleteSummary: builder.mutation({
+            query: (id) => ({
+                url: `/summaries/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Summaries'],
+        }),
+    }),
 });
 
-export const {useLazyGetSummaryQuery} = articleApi;
+export const {
+    useGetSummaryMutation,
+    useGetHistoryQuery,
+    useDeleteSummaryMutation,
+} = articleApi;

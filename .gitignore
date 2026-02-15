@@ -1,0 +1,10 @@
+node_modules
+node_modules.zip
+dist
+.env
+.DS_Store
+coverage
+.vscode
+server/node_modules
+server/.env
+*.log
